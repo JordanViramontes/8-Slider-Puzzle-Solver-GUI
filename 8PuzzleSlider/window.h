@@ -6,6 +6,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QLineEdit>
+#include <QScrollArea>
 #include <vector>
 
 using std::vector;
@@ -29,18 +30,27 @@ private:
     QGridLayout *createGrid();
 
     // left column
-    QLineEdit *inputPuzzleText;
+    QLabel *puzzleLabel;
     QWidget *puzzleGraphicsWidget;
+    QLineEdit *inputPuzzleText;
     vector<QLabel*> puzzleGraphicsLabels;
     int cellSize;
 
+    QLabel *createPuzzleLabel();
     QWidget *createPuzzleGraphics();
     QWidget *createPuzzleInput();
     QWidget *createSearchInput();
     void UpdatePuzzleGraphics();
+    QString getVecString();
 
 
     // right column
+    QWidget *outputBox;
+    QWidget *scrollBox;
+    vector<QLabel*> outputBoxLabels;
+
+    QWidget *createOutputBox();
+    QWidget *createScrollBox();
 
 
 private slots:

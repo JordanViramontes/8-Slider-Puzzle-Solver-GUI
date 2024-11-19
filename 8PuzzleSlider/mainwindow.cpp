@@ -15,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
     // layout->addWidget(window);
 
     setCentralWidget(window);
+    setFixedSize(640, 480);
 }
 
 MainWindow::~MainWindow()

@@ -10,6 +10,7 @@
 #include <QSizePolicy>
 #include <QFrame>
 #include <QMessageBox>
+#include <QScrollArea>
 #include <vector>
 
 Window::Window(QWidget *parent)
@@ -30,35 +31,73 @@ Window::Window(QWidget *parent)
 
 QGridLayout *Window::createGrid() {
     QGridLayout *layout = new QGridLayout(this);
-    layout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     layout->setColumnStretch(0, 1);
     layout->setColumnStretch(1, 2);
 
     //left column
     puzzleGraphicsWidget = createPuzzleGraphics();
+    puzzleLabel = createPuzzleLabel();
+    QSpacerItem *hSpacer = new QSpacerItem(1, 50);
     QWidget *puzzleInputWidget = createPuzzleInput();
     QWidget *searchInputWidget = createSearchInput();
 
+    puzzleLabel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     puzzleGraphicsWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     puzzleInputWidget->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     searchInputWidget->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 
-    layout->addWidget(puzzleGraphicsWidget, 0, 0);
-    layout->addWidget(puzzleInputWidget, 1, 0);
-    layout->addWidget(searchInputWidget, 2, 0);
+    QVBoxLayout *leftColumn = new QVBoxLayout(this);
+    leftColumn->addWidget(puzzleGraphicsWidget, 0);
+    leftColumn->addWidget(puzzleLabel, 1);
+    leftColumn->addItem(hSpacer);
+    leftColumn->addWidget(puzzleInputWidget, 3);
+    leftColumn->addWidget(searchInputWidget, 4);
 
     // right column
-    QFrame *line;
+    outputBox = createOutputBox();
+    scrollBox = createScrollBox();
+
+    outputBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
+    scrollBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    QVBoxLayout *rightColumn = new QVBoxLayout(this);
+    rightColumn->addWidget(outputBox, 0);
+    rightColumn->addWidget(scrollBox, 1);
+
+
+    // fix columns
+    QFrame *line; // middle line
     line = new QFrame;
     line->setFrameShape(QFrame::VLine);
 
-    QGroupBox *temp = new QGroupBox();
-    temp->setFixedSize(300, 300);
-
-    layout->addWidget(line, 0, 1, 0, -1);
-    layout->addWidget(temp, 0, 2);
+    layout->addLayout(leftColumn, 0, 0);
+    layout->addWidget(line, 0, 1, -1, 1); // middle line
+    layout->addLayout(rightColumn, 0, 2);
+    layout->setColumnStretch(0, 1);
+    layout->setColumnStretch(2, 5);
 
     return layout;
+}
+
+// left column
+
+QLabel *Window::createPuzzleLabel() {
+    // header label
+    QString string = getVecString();
+    QLabel* label = new QLabel(string, this);
+    label->setAlignment(Qt::AlignCenter);
+
+    return label;
+}
+
+QString Window::getVecString() {
+    QString string = "Current Puzzle is:\n<";
+
+    for (unsigned int i = 0; i < puzzleVec.size()-1; i++) {
+        string += QString::number(puzzleVec.at(i)) + ", ";
+    }
+    string += QString::number(puzzleVec.at(puzzleVec.size()-1)) + ">";
+    return string;
 }
 
 QWidget *Window::createPuzzleGraphics() {
@@ -83,7 +122,7 @@ QWidget *Window::createPuzzleGraphics() {
             label->setFixedSize(cellSize, cellSize);
 
             puzzleGraphicsLabels.push_back(label);
-            layout->addWidget(label, i, j);
+            layout->addWidget(label, i+1, j);
         }
     }
 
@@ -94,11 +133,17 @@ QWidget *Window::createPuzzleGraphics() {
 }
 
 void Window::UpdatePuzzleGraphics() {
+    // get string for puzzleLabel
+    QString string = getVecString();
+
     // called after puzzleVec has been updated
     for (unsigned int i = 0; i < puzzleVec.size(); i++) {
         puzzleGraphicsLabels.at(i)->setText(QString::number(puzzleVec.at(i)));
+        // puzzle
     }
 
+    puzzleLabel->setText(string);
+    puzzleLabel->update();
     puzzleGraphicsWidget->update();
 }
 
@@ -122,7 +167,10 @@ QWidget *Window::createPuzzleInput() {
     startButton->setText("Start Search");
     startButton->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
 
-    // connections when clicking buttons
+    // connections when clicking buttons / pressing enter
+    connect(inputPuzzleText, SIGNAL(returnPressed()),
+            this, SLOT(updatePuzzle()));
+
     connect(updateButton, SIGNAL(clicked(bool)),
             this, SLOT(updatePuzzle()));
 
@@ -166,6 +214,45 @@ QWidget *Window::createSearchInput() {
     box->setLayout(layout);
     return box;
 }
+
+
+
+// right column
+
+QWidget *Window::createOutputBox() {
+    // main visual box and vertical layout
+    QGroupBox *box = new QGroupBox(tr("Output:"), this);
+    QVBoxLayout *layout = new QVBoxLayout(this);
+
+    // labels
+    QLabel *headerLabel = new QLabel(tr("Press \'Start Search\' button to start"), this);
+    QLabel *outputLabel = new QLabel(this);
+
+
+    // headerLabel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+    headerLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    outputLabel->setAlignment(Qt::AlignLeft | Qt::AlignBottom);
+
+    // add labels to vector
+    outputBoxLabels.push_back(headerLabel);
+    outputBoxLabels.push_back(outputLabel);
+
+    // add layout
+    layout->addWidget(headerLabel, 0);
+    layout->addWidget(outputLabel, 1);
+
+    box->setLayout(layout);
+    return box;
+}
+
+QWidget *Window::createScrollBox() {
+    QScrollArea *scroll = new QScrollArea;
+    scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    return scroll;
+}
+
+
 
 // connections
 
@@ -250,6 +337,12 @@ void Window::updateSearchType(int id) {
 }
 
 void Window::startSearch() {
-    qDebug() << "starting search";
+    // test strings:
+    QString outputString = "The total amount of nodes expanded were: 1\n";
+    outputString += "The total amount of nodes in the queue were: 4.\nThe depth of the goal was: 2.";
+
+    outputBoxLabels.at(0)->setText("By using: Uniform Cost Search...");
+    outputBoxLabels.at(1)->setText(outputString);
+    outputBox->update();
 }
 
