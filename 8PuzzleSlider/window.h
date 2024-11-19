@@ -5,6 +5,7 @@
 #include <QGridLayout>
 #include <QPushButton>
 #include <QLabel>
+#include <QLineEdit>
 #include <vector>
 
 using std::vector;
@@ -22,12 +23,14 @@ private:
     int searchType;
     int puzzleSize;
     int dimentionSize;
-    vector<int> PuzzleVec;
+    vector<int> puzzleVec;
 
     // main grid
     QGridLayout *createGrid();
 
     // left column
+    QLineEdit *inputPuzzleText;
+    QWidget *puzzleGraphicsWidget;
     vector<QLabel*> puzzleGraphicsLabels;
     int cellSize;
 

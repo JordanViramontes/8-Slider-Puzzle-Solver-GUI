@@ -9,6 +9,7 @@
 #include <QLineEdit>
 #include <QSizePolicy>
 #include <QFrame>
+#include <QMessageBox>
 #include <vector>
 
 Window::Window(QWidget *parent)
@@ -19,7 +20,7 @@ Window::Window(QWidget *parent)
     searchType = 0;
     dimentionSize = 3;
     puzzleSize = dimentionSize * dimentionSize;
-    PuzzleVec = {1,2,3,4,5,6,7,8,0};
+    puzzleVec = {1,2,3,4,5,6,7,8,0};
 
     QGridLayout *grid = createGrid();
 
@@ -34,7 +35,7 @@ QGridLayout *Window::createGrid() {
     layout->setColumnStretch(1, 2);
 
     //left column
-    QWidget *puzzleGraphicsWidget = createPuzzleGraphics();
+    puzzleGraphicsWidget = createPuzzleGraphics();
     QWidget *puzzleInputWidget = createPuzzleInput();
     QWidget *searchInputWidget = createSearchInput();
 
@@ -47,9 +48,15 @@ QGridLayout *Window::createGrid() {
     layout->addWidget(searchInputWidget, 2, 0);
 
     // right column
+    QFrame *line;
+    line = new QFrame;
+    line->setFrameShape(QFrame::VLine);
+
     QGroupBox *temp = new QGroupBox();
     temp->setFixedSize(300, 300);
-    layout->addWidget(temp, 0, 1);
+
+    layout->addWidget(line, 0, 1, 0, -1);
+    layout->addWidget(temp, 0, 2);
 
     return layout;
 }
@@ -68,7 +75,7 @@ QWidget *Window::createPuzzleGraphics() {
     int vectorCount = 0;
     for (int i = 0; i < dimentionSize; i++) {
         for (int j = 0; j < dimentionSize; j++, vectorCount++) {
-            QLabel *label = new QLabel(QString::number(PuzzleVec.at(vectorCount)), this);
+            QLabel *label = new QLabel(QString::number(puzzleVec.at(vectorCount)), this);
             label->setFont(labelFont);
             label->setAlignment(Qt::AlignCenter);
             label->setFrameStyle(QFrame::Box | QFrame::Plain);
@@ -86,13 +93,22 @@ QWidget *Window::createPuzzleGraphics() {
     return widget;
 }
 
+void Window::UpdatePuzzleGraphics() {
+    // called after puzzleVec has been updated
+    for (unsigned int i = 0; i < puzzleVec.size(); i++) {
+        puzzleGraphicsLabels.at(i)->setText(QString::number(puzzleVec.at(i)));
+    }
+
+    puzzleGraphicsWidget->update();
+}
+
 QWidget *Window::createPuzzleInput() {
     // main group box and layout
     QGroupBox *box = new QGroupBox(tr("Input puzzle. \'0\' means a blank space: "), this);
     QGridLayout *layout = new QGridLayout(this);
 
     // layout widgets
-    QLineEdit *inputPuzzleText = new QLineEdit(this);
+    inputPuzzleText = new QLineEdit(this);
     inputPuzzleText->setPlaceholderText("default: 123456780");
     inputPuzzleText->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
 
@@ -154,7 +170,78 @@ QWidget *Window::createSearchInput() {
 // connections
 
 void Window::updatePuzzle() {
-    qDebug() << "Updating puzzle";
+    // initialize error message and new puzzle vector
+    bool isInputFine = true;
+    bool isInvalidChar = false;     // used for error handling
+    bool isDuplicateChar = false;   // used for error handling
+    vector<QString> errorMessageVec;
+    vector<int> newPuzzle;
+    for (unsigned int i = 0; i < inputPuzzleText->text().size(); i++) {
+        // push inputPuzzle character into new vector
+        newPuzzle.push_back(inputPuzzleText->text().at(i).digitValue());
+    }
+
+    // check if input is valid
+    //input of nothing
+    if (newPuzzle.size() != 9) {
+        errorMessageVec.push_back("Invalid input size");
+        isInputFine = false;
+    }
+
+    // iterate over vector
+    for (unsigned int i = 0; i < newPuzzle.size(); i++) {
+        // check character
+        if (newPuzzle.at(i) < 0 || newPuzzle.at(i) > 8) {
+            if (!isInvalidChar) {
+                errorMessageVec.push_back("Invalid characer inputted");
+                isInvalidChar = true;
+            }
+            isInputFine = false;
+        }
+
+        // check duplicates
+        bool charCounter = false;
+        for (unsigned int j = 0; j < newPuzzle.size(); j++) {
+            if (newPuzzle.at(i) == newPuzzle.at(j)) {
+                // one way flag, if character is counted twice than isinputfine is false
+                if (charCounter) {
+                    if (!isDuplicateChar) {
+                        errorMessageVec.push_back("Duplicate characters inputted");
+                        isDuplicateChar = true;
+                    }
+                    isInputFine = false;
+                }
+
+                charCounter = true;
+            }
+        }
+    }
+
+    // check for solved puzzle
+    vector<int> tempCheck = {1,2,3,4,5,6,7,8,0};
+    if (newPuzzle == tempCheck) {
+        errorMessageVec.push_back("Inputted puzzle already solved!");
+        isInputFine = false;
+    }
+
+    // if check went through
+    if (isInputFine) {
+        puzzleVec = newPuzzle;
+        UpdatePuzzleGraphics();
+    }
+    else {
+        QString finalError = "";
+        for (unsigned int i = 0; i < errorMessageVec.size()-1; i++) {
+            finalError += errorMessageVec.at(i) + ", ";
+        }
+        finalError += errorMessageVec.at(errorMessageVec.size()-1);
+
+        QMessageBox errorBox;
+        errorBox.setWindowTitle("Error Inputting Puzzle");
+        errorBox.setText(finalError);
+        errorBox.setIcon(QMessageBox::Critical);
+        errorBox.exec();
+    }
 }
 
 void Window::updateSearchType(int id) {
