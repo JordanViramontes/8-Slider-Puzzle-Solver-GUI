@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QGridLayout>
 #include <QPushButton>
+#include <QLabel>
 #include <vector>
 
 using std::vector;
@@ -19,14 +20,16 @@ private:
     int windowH;
     int windowV;
     int searchType;
+    int puzzleSize;
+    int dimentionSize;
     vector<int> PuzzleVec;
 
     // main grid
     QGridLayout *createGrid();
 
     // left column
-    QPushButton *updateButton;
-    QPushButton *startButton;
+    vector<QLabel*> puzzleGraphicsLabels;
+    int cellSize;
 
     QWidget *createPuzzleGraphics();
     QWidget *createPuzzleInput();
@@ -38,9 +41,9 @@ private:
 
 
 private slots:
-    // void updatePuzzle();
+    void updatePuzzle();
     void updateSearchType(int id);
-    // void startSearch();
+    void startSearch();
 
 signals:
 };
