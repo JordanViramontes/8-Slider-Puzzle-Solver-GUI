@@ -10,6 +10,8 @@
 #include <QStackedWidget>
 #include <vector>
 
+#include "graph.h"
+
 using std::vector;
 
 class Window : public QWidget
@@ -59,8 +61,13 @@ private:
 
     // right column
     QWidget *outputBox;
-    QWidget *scrollBox;
     vector<QLabel*> outputBoxLabels;
+
+    QWidget *scrollBox;
+    QGridLayout *scrollAreaOutput;
+    QWidget *createScrollOutput(std::shared_ptr<Board> finalNode);
+    QLayout *createScrollOutputHelper(std::shared_ptr<Board> n, QVBoxLayout *layout);
+    QWidget *scrollWidget = new QWidget(this);
 
     QWidget *createOutputBox();
     QWidget *createScrollBox();

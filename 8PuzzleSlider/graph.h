@@ -35,6 +35,7 @@ class Board : public std::enable_shared_from_this<Board>{
         double h; int g; double f;
         int size = 3; // 3x3 board
         int blanknum; // should be size*size=9 by default
+        int previousMove;
 
         // helpers
         void findPos(const std::vector<std::vector<int>> &, int &, int &, int); //return 2 ints that show location of blank, use as a helped
@@ -49,7 +50,7 @@ class Board : public std::enable_shared_from_this<Board>{
             return shared_from_this();
         }
         // constructors
-        Board(std::shared_ptr<Board>, const std::vector<std::vector<int>> &, const std::vector<std::vector<int>> &, int);
+        Board(std::shared_ptr<Board>, const std::vector<std::vector<int>> &, const std::vector<std::vector<int>> &, int, int prevM);
         void  getConstants(int &s, int &bN, int &d);
 
         // Algorithm
@@ -60,10 +61,12 @@ class Board : public std::enable_shared_from_this<Board>{
         // Get
         std::vector<std::vector<int>> const getVector() { return board; }
         std::shared_ptr<Board> const getParent() { return parent; }
+        double getH() { return h; }
         double  getF() { return f; }
         int  getDepth() { return g; }
         bool  getExplored() { return explored; }
         void  setParent(std::shared_ptr<Board>);
+        int getPreviousMode() { return previousMove; }
 };
 
 class Graph {
@@ -87,6 +90,7 @@ class Graph {
         // get
         int getDepth() { return finalBoard->getDepth() + 1; };
         unsigned int  getSize() { return allBoards.size(); }
+        std::shared_ptr<Board> getFinalBoard() { return finalBoard; }
         QString getStringOutput();
 };
 

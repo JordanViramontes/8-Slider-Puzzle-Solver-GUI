@@ -13,11 +13,13 @@ SOURCES += \
     graph.cpp \
     main.cpp \
     mainwindow.cpp \
+    puzzlevisual.cpp \
     window.cpp
 
 HEADERS += \
     graph.h \
     mainwindow.h \
+    puzzlevisual.h \
     window.h
 
 FORMS += \

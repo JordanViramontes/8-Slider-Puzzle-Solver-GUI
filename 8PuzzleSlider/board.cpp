@@ -10,8 +10,9 @@
 using namespace std;
 
 // Board (object should never be created without a vector)
-Board::Board(shared_ptr<Board> p, const vector<vector<int>> &v, const vector<vector<int>> &goal, int calc) {
+Board::Board(shared_ptr<Board> p, const vector<vector<int>> &v, const vector<vector<int>> &goal, int calc, int prevM) {
     board = v;
+    previousMove = prevM;
 
     if (p == nullptr) {
         blanknum = size*size;
@@ -222,7 +223,7 @@ vector<shared_ptr<Board>> Board::ASearch(vector<shared_ptr<Board>> &knowns, cons
         }
 
         // if its unique, push back a new board
-        if (!isKnown) returnBoards.push_back(shared_ptr<Board>(new Board(getBoardThis(), temp, goal, calc)));
+        if (!isKnown) returnBoards.push_back(shared_ptr<Board>(new Board(getBoardThis(), temp, goal, calc, possibleMoves.at(i))));
     }
 
     explored = true;
@@ -248,13 +249,13 @@ vector<shared_ptr<Board>> Board::ASearchUniform(const std::vector<std::vector<in
 
         // if parent is null
         if (parent == nullptr) {
-            returnBoards.push_back(shared_ptr<Board>(new Board(getBoardThis(), move(possibleMoves.at(i)), goal, 0)));
+            returnBoards.push_back(shared_ptr<Board>(new Board(getBoardThis(), move(possibleMoves.at(i)), goal, 0, possibleMoves.at(i))));
             continue;
         }
 
         //check if our move is the same as the parent
         if (t != parent->getVector()) {
-            returnBoards.push_back(shared_ptr<Board>(new Board(getBoardThis(), move(possibleMoves.at(i)), goal, 0)));
+            returnBoards.push_back(shared_ptr<Board>(new Board(getBoardThis(), move(possibleMoves.at(i)), goal, 0, possibleMoves.at(i))));
         }
     }
 

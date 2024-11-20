@@ -1,5 +1,5 @@
 #include "window.h"
-#include "graph.cpp"
+#include "puzzlevisual.h"
 
 #include <QWidget>
 #include <QGridLayout>
@@ -16,6 +16,8 @@
 #include <QStackedLayout>
 #include <QStackedWidget>
 #include <vector>
+
+using std::vector, std::shared_ptr;
 
 Window::Window(QWidget *parent)
     : QWidget{parent}
@@ -41,44 +43,49 @@ QGridLayout *Window::createGrid() {
     //left column
     puzzleGraphicsWidget = createPuzzleGraphics();
     puzzleLabel = createPuzzleLabel();
-    // QSpacerItem *hSpacer = new QSpacerItem(1, 50);
     puzzleInputMainWidget = createPuzzleInput();
     QWidget *searchInputWidget = createSearchInput();
 
     puzzleLabel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     puzzleGraphicsWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    puzzleInputMainWidget->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+    puzzleInputMainWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     searchInputWidget->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 
     QVBoxLayout *leftColumn = new QVBoxLayout(this);
     leftColumn->addWidget(puzzleGraphicsWidget, 0);
     leftColumn->addWidget(puzzleLabel, 1);
-    // leftColumn->addItem(hSpacer);
     leftColumn->addWidget(puzzleInputMainWidget, 3);
     leftColumn->addWidget(searchInputWidget, 4);
 
     // right column
     outputBox = createOutputBox();
     scrollBox = createScrollBox();
+    QLabel *scrollHeader = new QLabel(tr("Optimal Route Output:"), this);
 
     outputBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
-    scrollBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    scrollBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+    scrollHeader->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+
+    scrollHeader->setAlignment(Qt::AlignLeft);
 
     QVBoxLayout *rightColumn = new QVBoxLayout(this);
     rightColumn->addWidget(outputBox, 0);
-    rightColumn->addWidget(scrollBox, 1);
+    rightColumn->addWidget(scrollHeader, 1);
+    rightColumn->addWidget(scrollBox, 2);
+
+    rightColumn->setStretch(1, 0);
 
 
     // fix columns
     QFrame *line; // middle line
-    line = new QFrame;
+    line = new QFrame(this);
     line->setFrameShape(QFrame::VLine);
 
     layout->addLayout(leftColumn, 0, 0);
     layout->addWidget(line, 0, 1, -1, 1); // middle line
     layout->addLayout(rightColumn, 0, 2);
     layout->setColumnStretch(0, 1);
-    layout->setColumnStretch(2, 5);
+    layout->setColumnStretch(2, 10);
 
     return layout;
 }
@@ -179,7 +186,7 @@ QWidget *Window::createPuzzleInput() {
 
 QWidget *Window::createInputRadioButtons() {
     // buttons
-    QRadioButton *radio1 = new QRadioButton(tr("Single Line Input"), this);
+    QRadioButton *radio1 = new QRadioButton(tr("Single Input"), this);
     QRadioButton *radio2 = new QRadioButton(tr("Multiple Inputs"), this);
     radio1->setChecked(true);
 
@@ -346,7 +353,17 @@ QWidget *Window::createOutputBox() {
 
 QWidget *Window::createScrollBox() {
     QScrollArea *scroll = new QScrollArea;
-    scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    scroll->setWidgetResizable(true);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+
+    scroll->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
+    scrollAreaOutput = new QGridLayout(this);
+
+    QWidget *w = new QWidget(this);
+    w->setLayout(scrollAreaOutput);
+    scroll->setWidget(w);
 
     return scroll;
 }
@@ -530,5 +547,119 @@ void Window::startSearch() {
     outputBoxLabels.at(0)->setText("By using: " + searchString + "...");
     outputBoxLabels.at(1)->setText(finalOutput);
     outputBox->update();
+
+    // Update scroll box area
+    delete scrollWidget;
+    scrollWidget = createScrollOutput(g.getFinalBoard());
+    scrollAreaOutput->addWidget(scrollWidget);
+
+    scrollBox->update();
+}
+
+QWidget* Window::createScrollOutput(shared_ptr<Board> finalNode) {
+    // core layout
+    QVBoxLayout *initLayout = new QVBoxLayout(this);
+    QLayout *coreLayout = createScrollOutputHelper(finalNode, initLayout);
+
+    // headers
+    QLabel *headerLeft = new QLabel("State:", this);
+    QLabel *headerRight = new QLabel("Move:      ", this);
+    headerLeft->setAlignment(Qt::AlignHCenter);
+    headerRight->setAlignment(Qt::AlignHCenter);
+
+    // line
+    QFrame *line; // middle line
+    line = new QFrame(this);
+    line->setFrameShape(QFrame::HLine);
+
+    // final
+    QGridLayout *finalLayout = new QGridLayout(this);
+    finalLayout->addWidget(headerLeft, 0, 0);
+    finalLayout->addWidget(headerRight, 0, 3);
+    finalLayout->addWidget(line, 1, 0, 1, 4);
+    finalLayout->addLayout(coreLayout, 2 ,0, -1, -1);
+    finalLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+
+
+    QWidget *w = new QWidget(this);
+    w->setLayout(finalLayout);
+    return w;
+}
+
+QLayout* Window::createScrollOutputHelper(shared_ptr<Board> n, QVBoxLayout *layout) {
+    if (n == nullptr) return layout; // base case
+    qDebug() << n->getDepth();
+    createScrollOutputHelper(n->getParent(), layout);
+
+    PuzzleVisual *testPuzzle = new PuzzleVisual(n, dimentionSize, this);
+
+    // Explored: Yes!
+    // G value (Depth) = 1
+    // H value = 3
+    // F value = 4
+    QString testString = "";
+    if (n->getExplored()) testString += "Explored: Yes!\n";
+    else testString += "Explored: No!\n";
+    testString += "G Value (Depth) = " + QString::number(n->getDepth()) + "\n";
+    testString += "H Value = " + QString::number(n->getH()) + "\n";
+    testString += "F Value = " + QString::number(n->getF());
+
+    QFont bigFont("Sans Serif", 15, QFont::StyleItalic);
+    QString testStringAGAIN = "Move Blank:\n";
+    QString testString2 = "";
+
+    switch(n->getPreviousMode()) {
+    case(-1): // initNode
+        testStringAGAIN = "Starting State";
+        break;
+    case(0): // up
+        testString2 += "Up";
+        break;
+    case(1): // down
+        testString2 += "Down";
+        break;
+    case(2): // left
+        testString2 += "Left";
+        break;
+    case(3): // right
+        testString2 += "Right";
+        break;
+    default:
+        qDebug() << "ERROR GETTING MOVE FOR SCROLLBOX";
+        break;
+    }
+
+    QLabel *moveLabel = new QLabel(testStringAGAIN, this);
+    QLabel *secondLabel = new QLabel(testString2, this);
+    secondLabel->setFont(bigFont);
+
+    moveLabel->setAlignment(Qt::AlignCenter);
+    secondLabel->setAlignment(Qt::AlignCenter);
+
+    QVBoxLayout *moveLabels = new QVBoxLayout(this);
+    moveLabels->setSpacing(0);
+    moveLabels->setAlignment(Qt::AlignCenter);
+    moveLabels->addWidget(moveLabel);
+    if (testString2.size() != 0) moveLabels->addWidget(secondLabel);
+
+    QWidget *labelsWidget = new QWidget(this);
+    labelsWidget->setLayout(moveLabels);
+
+    QLabel *testLabel = new QLabel(testString, this);
+    testLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+    QFrame *line; // middle line
+    line = new QFrame(this);
+    line->setFrameShape(QFrame::VLine);
+
+    QGridLayout *currentLayout = new QGridLayout(this);
+    currentLayout->setSpacing(10);
+    currentLayout->addWidget(testPuzzle, 0, 0);
+    currentLayout->addWidget(testLabel, 0, 1);
+    currentLayout->addWidget(line, 0, 2);
+    currentLayout->addWidget(labelsWidget, 0, 3);
+
+    layout->addLayout(currentLayout);
+    return layout;
 }
 

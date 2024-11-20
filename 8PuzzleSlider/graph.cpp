@@ -22,7 +22,7 @@ Graph::Graph(vector<vector<int>> v, int c) {
     }
 
     // variables
-    initBoard = shared_ptr<Board>(new Board(nullptr, v, goal, c));
+    initBoard = shared_ptr<Board>(new Board(nullptr, v, goal, c, -1));
     finalBoard = nullptr;
     allBoards.push_back(initBoard);
     calc = c;
