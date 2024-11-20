@@ -60,7 +60,9 @@ QGridLayout *Window::createGrid() {
     // right column
     outputBox = createOutputBox();
     scrollBox = createScrollBox();
-    QLabel *scrollHeader = new QLabel(tr("Optimal Route Output:"), this);
+    QLabel *scrollHeader = new QLabel(tr("Optimal Route:"), this);
+    QLabel *creditsHeader = new QLabel(tr("Created by Jordan Viramontes using QT Creator 6.8.0"), this);
+    QLabel *versionHeader = new QLabel(tr("8 Puzzle Slider Solver GUI v0.3, 11/19/2024"), this);
 
     outputBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
     scrollBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
@@ -72,8 +74,12 @@ QGridLayout *Window::createGrid() {
     rightColumn->addWidget(outputBox, 0);
     rightColumn->addWidget(scrollHeader, 1);
     rightColumn->addWidget(scrollBox, 2);
+    rightColumn->addWidget(creditsHeader, 3);
+    rightColumn->addWidget(versionHeader, 3);
 
     rightColumn->setStretch(1, 0);
+    rightColumn->setStretch(3, 0);
+    rightColumn->setStretch(4, 0);
 
 
     // fix columns

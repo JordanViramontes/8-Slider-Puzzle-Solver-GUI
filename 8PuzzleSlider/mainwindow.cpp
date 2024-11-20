@@ -16,6 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     setCentralWidget(window);
     setFixedSize(640, 480);
+    setWindowTitle("8 Slider Puzzle Solver GUI");
 }
 
 MainWindow::~MainWindow()
