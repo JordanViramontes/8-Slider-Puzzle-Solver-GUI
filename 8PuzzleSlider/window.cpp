@@ -1,4 +1,5 @@
 #include "window.h"
+#include "graph.cpp"
 
 #include <QWidget>
 #include <QGridLayout>
@@ -337,12 +338,34 @@ void Window::updateSearchType(int id) {
 }
 
 void Window::startSearch() {
-    // test strings:
-    QString outputString = "The total amount of nodes expanded were: 1\n";
-    outputString += "The total amount of nodes in the queue were: 4.\nThe depth of the goal was: 2.";
+    // prepare vector for graph
+    vector<vector<int>> finalVec;
+    int vectorCnt = 0;
+    for (int i = 0; i < dimentionSize; i++) {
+        // push back row
+        vector<int> tempVector;
+        finalVec.push_back(tempVector);
 
-    outputBoxLabels.at(0)->setText("By using: Uniform Cost Search...");
-    outputBoxLabels.at(1)->setText(outputString);
-    outputBox->update();
+        // fill the row
+        for (int j = 0; j < dimentionSize; j++) {
+            if (puzzleVec.at(vectorCnt) == 0) { finalVec.at(i).push_back(9); }
+            else { finalVec.at(i).push_back(puzzleVec.at(vectorCnt)); }
+            vectorCnt++;
+        }
+    }
+
+    // create graph and perform search
+    Graph g(finalVec, searchType);
+    g.ASearch();
+
+    qDebug() << "after Graph";
+
+    // test strings:
+    // QString outputString = "The total amount of nodes expanded were: 1\n";
+    // outputString += "The total amount of nodes in the queue were: 4.\nThe depth of the goal was: 2.";
+
+    // outputBoxLabels.at(0)->setText("By using: Uniform Cost Search...");
+    // outputBoxLabels.at(1)->setText(outputString);
+    // outputBox->update();
 }
 

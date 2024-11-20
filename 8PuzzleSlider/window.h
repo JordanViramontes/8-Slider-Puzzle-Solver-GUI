@@ -21,9 +21,9 @@ private:
     // variables
     int windowH;
     int windowV;
-    int searchType;
     int puzzleSize;
     int dimentionSize;
+    int searchType;
     vector<int> puzzleVec;
 
     // main grid
