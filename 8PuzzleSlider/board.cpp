@@ -146,7 +146,7 @@ double Board::calculateH(const vector<vector<int>> &v,
             total = 0;
             break;
         }
-        case 1: { //Mismatched Tile
+        case 2: { //Mismatched Tile
             for (unsigned int i = 0; i < v.size(); i++) {
                 for (unsigned int j = 0; j < v.at(i).size(); j++) {
                     if (v.at(i).at(j) != g.at(i).at(j)) total++;
@@ -154,7 +154,7 @@ double Board::calculateH(const vector<vector<int>> &v,
             }
             break;
         }
-        case 2: { //Euclidean
+        case 1: { //Euclidean
             for (int i = 0; i < blanknum-1; i++) {
                 int x1, x2, y1, y2;
                 findPos(v, x1, y1, i+1);

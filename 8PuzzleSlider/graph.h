@@ -1,6 +1,7 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
+#include <QString>
 #include <vector>
 #include <string>
 #include <memory>
@@ -73,6 +74,7 @@ class Graph {
         std::vector<std::vector<int>> goal; // goal state
         int calc; // determines the heuristic
         int size = 3;
+        int expanded;
 
         void printRoute(std::shared_ptr<Board>);
         void ASearch(std::shared_ptr<Board>);
@@ -80,12 +82,12 @@ class Graph {
 
     public:
         Graph(std::vector<std::vector<int>>, int);
-        ~Graph();
         void ASearch();
 
         // get
         int getDepth() { return finalBoard->getDepth() + 1; };
         unsigned int  getSize() { return allBoards.size(); }
+        QString getStringOutput();
 };
 
 #endif // GRAPH_H

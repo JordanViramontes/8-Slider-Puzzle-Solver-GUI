@@ -12,6 +12,7 @@
 #include <QFrame>
 #include <QMessageBox>
 #include <QScrollArea>
+#include <QApplication>
 #include <vector>
 
 Window::Window(QWidget *parent)
@@ -334,10 +335,16 @@ void Window::updatePuzzle() {
 
 void Window::updateSearchType(int id) {
     searchType = id;
-    qDebug() << "Updating search type to: " << searchType;
 }
 
 void Window::startSearch() {
+    // set searching icon
+    outputBoxLabels.at(0)->setText("Searching for goal...");
+    outputBoxLabels.at(1)->setText("");
+    outputBox->update();
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+
+
     // prepare vector for graph
     vector<vector<int>> finalVec;
     int vectorCnt = 0;
@@ -358,14 +365,27 @@ void Window::startSearch() {
     Graph g(finalVec, searchType);
     g.ASearch();
 
-    qDebug() << "after Graph";
+    // get final output
+    QString searchString = "";
+    switch(searchType) {
+    case (0):
+        searchString = "Uniform Cost Search";
+        break;
+    case(1):
+        searchString = "A* Euclidean Distance Heuristic";
+        break;
+    case(2):
+        searchString = "A* Misplaced Tile Heuristic";
+        break;
+    default:
+        searchString = "ERROR WHEN GETTING SEARCHTYPE";
+        break;
+    }
 
-    // test strings:
-    // QString outputString = "The total amount of nodes expanded were: 1\n";
-    // outputString += "The total amount of nodes in the queue were: 4.\nThe depth of the goal was: 2.";
-
-    // outputBoxLabels.at(0)->setText("By using: Uniform Cost Search...");
-    // outputBoxLabels.at(1)->setText(outputString);
-    // outputBox->update();
+    QApplication::restoreOverrideCursor(); // reset mouse cursor
+    QString finalOutput = g.getStringOutput();
+    outputBoxLabels.at(0)->setText("By using: " + searchString + "...");
+    outputBoxLabels.at(1)->setText(finalOutput);
+    outputBox->update();
 }
 

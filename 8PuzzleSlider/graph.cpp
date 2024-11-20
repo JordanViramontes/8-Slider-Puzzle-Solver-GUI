@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QString>
 
 #include <vector>
 #include <cmath>
@@ -25,10 +26,6 @@ Graph::Graph(vector<vector<int>> v, int c) {
     finalBoard = nullptr;
     allBoards.push_back(initBoard);
     calc = c;
-}
-
-Graph::~Graph() {
-    qDebug() << "in Deconstructor";
 }
 
 void Graph::ASearch(std::shared_ptr<Board> b) {
@@ -97,12 +94,26 @@ void Graph::ASearch() {
     if (calc == 0) ASearchUniform();
     else ASearch(initBoard);
 
-    int expanded = 0;
+    expanded = 0;
     for (unsigned int i = 0; i < allBoards.size(); i++) {
         if (allBoards.at(i)->getExplored()) expanded++;
     }
-
-    qDebug() << "The total amount of nodes expanded were: " << expanded;
-    qDebug() << "The total amount of nodes in the queue were: " << allBoards.size();
-    qDebug() << "The depth of the goal was: " << finalBoard->getDepth();
 }
+
+QString Graph::getStringOutput() {
+    QString string = "";
+    string += "The total amount of nodes expanded were: " + QString::number(expanded) + "\n";
+    string += "The total amount of nodes in the queue were: " + QString::number(allBoards.size()) + "\n";
+    string += "The depth of the goal was: " + QString::number(finalBoard->getDepth()) + "\n";
+
+    return string;
+}
+
+
+
+
+
+
+
+
+
