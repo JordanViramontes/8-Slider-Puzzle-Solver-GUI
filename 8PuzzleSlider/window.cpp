@@ -13,6 +13,8 @@
 #include <QMessageBox>
 #include <QScrollArea>
 #include <QApplication>
+#include <QStackedLayout>
+#include <QStackedWidget>
 #include <vector>
 
 Window::Window(QWidget *parent)
@@ -39,20 +41,20 @@ QGridLayout *Window::createGrid() {
     //left column
     puzzleGraphicsWidget = createPuzzleGraphics();
     puzzleLabel = createPuzzleLabel();
-    QSpacerItem *hSpacer = new QSpacerItem(1, 50);
-    QWidget *puzzleInputWidget = createPuzzleInput();
+    // QSpacerItem *hSpacer = new QSpacerItem(1, 50);
+    puzzleInputMainWidget = createPuzzleInput();
     QWidget *searchInputWidget = createSearchInput();
 
     puzzleLabel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     puzzleGraphicsWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    puzzleInputWidget->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+    puzzleInputMainWidget->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     searchInputWidget->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 
     QVBoxLayout *leftColumn = new QVBoxLayout(this);
     leftColumn->addWidget(puzzleGraphicsWidget, 0);
     leftColumn->addWidget(puzzleLabel, 1);
-    leftColumn->addItem(hSpacer);
-    leftColumn->addWidget(puzzleInputWidget, 3);
+    // leftColumn->addItem(hSpacer);
+    leftColumn->addWidget(puzzleInputMainWidget, 3);
     leftColumn->addWidget(searchInputWidget, 4);
 
     // right column
@@ -110,13 +112,16 @@ QWidget *Window::createPuzzleGraphics() {
 
     // create a label for each spot in the graphics and set it to default puzzle
     // then, add it into the layout
-    QFont labelFont( "Arial", 15, QFont::Bold);
-    cellSize = 50;
+    QFont labelFont( "Arial", 10, QFont::Bold);
+    cellSize = 25;
 
     int vectorCount = 0;
     for (int i = 0; i < dimentionSize; i++) {
         for (int j = 0; j < dimentionSize; j++, vectorCount++) {
-            QLabel *label = new QLabel(QString::number(puzzleVec.at(vectorCount)), this);
+            QLabel *label = new QLabel(this);
+            if (puzzleVec.at(vectorCount) == 0) label->setText("");
+            else label->setText(QString::number(puzzleVec.at(vectorCount)));
+
             label->setFont(labelFont);
             label->setAlignment(Qt::AlignCenter);
             label->setFrameStyle(QFrame::Box | QFrame::Plain);
@@ -140,7 +145,8 @@ void Window::UpdatePuzzleGraphics() {
 
     // called after puzzleVec has been updated
     for (unsigned int i = 0; i < puzzleVec.size(); i++) {
-        puzzleGraphicsLabels.at(i)->setText(QString::number(puzzleVec.at(i)));
+        if (puzzleVec.at(i) == 0) { puzzleGraphicsLabels.at(i)->setText(""); }
+        else { puzzleGraphicsLabels.at(i)->setText(QString::number(puzzleVec.at(i))); }
         // puzzle
     }
 
@@ -152,40 +158,133 @@ void Window::UpdatePuzzleGraphics() {
 QWidget *Window::createPuzzleInput() {
     // main group box and layout
     QGroupBox *box = new QGroupBox(tr("Input puzzle. \'0\' means a blank space: "), this);
-    QGridLayout *layout = new QGridLayout(this);
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    inputType = 0;
 
-    // layout widgets
-    inputPuzzleText = new QLineEdit(this);
-    inputPuzzleText->setPlaceholderText("default: 123456780");
-    inputPuzzleText->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
+    //widgets
+    QWidget *radioButtons = createInputRadioButtons();
+    QWidget *inputText = createInputLineTextLayout();
+    inputText->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
 
-    QPushButton *updateButton;
-    updateButton = new QPushButton(this);
-    updateButton->setText("Update Puzzle");
-    updateButton->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
+    QWidget *pushButtons = createPushButtons();
 
-    QPushButton *startButton;
-    startButton = new QPushButton(this);
-    startButton->setText("Start Search");
-    startButton->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
-
-    // connections when clicking buttons / pressing enter
-    connect(inputPuzzleText, SIGNAL(returnPressed()),
-            this, SLOT(updatePuzzle()));
-
-    connect(updateButton, SIGNAL(clicked(bool)),
-            this, SLOT(updatePuzzle()));
-
-    connect(startButton, SIGNAL(clicked(bool)),
-            this, SLOT(startSearch()));
-
-    // finalize layout
-    layout->addWidget(inputPuzzleText, 0, 0, 1, 0);
-    layout->addWidget(updateButton, 1, 0);
-    layout->addWidget(startButton, 1, 1);
+    //layout
+    layout->addWidget(radioButtons);
+    layout->addWidget(inputText);
+    layout->addWidget(pushButtons);
 
     box->setLayout(layout);
     return box;
+}
+
+QWidget *Window::createInputRadioButtons() {
+    // buttons
+    QRadioButton *radio1 = new QRadioButton(tr("Single Line Input"), this);
+    QRadioButton *radio2 = new QRadioButton(tr("Multiple Inputs"), this);
+    radio1->setChecked(true);
+
+    // button group
+    QButtonGroup *buttons = new QButtonGroup(this);
+    buttons->addButton(radio1, 0);
+    buttons->addButton(radio2, 1);
+
+    // connection
+    connect(buttons, SIGNAL(idClicked(int)),
+            this, SLOT(updateInputType(int)));
+
+    // layout and return
+    QHBoxLayout *layout = new QHBoxLayout(this);
+    layout->addWidget(radio1);
+    layout->addWidget(radio2);
+
+    QWidget *w = new QWidget(this);
+    w->setLayout(layout);
+    return w;
+}
+
+QWidget *Window::createInputLineTextLayout() {
+    inputWidgetType = new QStackedWidget(this);
+    inputWidgetType->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+
+    // single line
+    QLineEdit *singleLine = new QLineEdit(this);
+    singleLine->setPlaceholderText("default: 123456780");
+    singleLine->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    inputTextBoxes.push_back(singleLine);
+
+    QSpacerItem *singleSpacer = new QSpacerItem(0, 0, QSizePolicy::Minimum, QSizePolicy::MinimumExpanding);
+
+    QVBoxLayout *singleLayout = new QVBoxLayout(this);
+    singleLayout->addWidget(singleLine);
+    singleLayout->addItem(singleSpacer);
+    QWidget *singleWidget = new QWidget(this);
+    singleWidget->setLayout(singleLayout);
+
+    inputWidgetType->addWidget(singleWidget);
+
+    // multi lines
+    QLineEdit *mult1 = new QLineEdit(this);
+    mult1->setPlaceholderText("default: 123");
+    QLineEdit *mult2 = new QLineEdit(this);
+    mult2->setPlaceholderText("default: 456");
+    QLineEdit *mult3 = new QLineEdit(this);
+    mult3->setPlaceholderText("default: 780");
+
+    mult1->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
+    mult2->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
+    mult3->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
+
+    inputTextBoxes.push_back(mult1);
+    inputTextBoxes.push_back(mult2);
+    inputTextBoxes.push_back(mult3);
+
+    QLabel *row1 = new QLabel(tr("Row 1:"), this);
+    QLabel *row2 = new QLabel(tr("Row 2:"), this);
+    QLabel *row3 = new QLabel(tr("Row 3:"), this);
+
+    QGridLayout *multLayout = new QGridLayout(this);
+    multLayout->addWidget(row1, 0, 0);
+    multLayout->addWidget(mult1, 0, 1);
+    multLayout->addWidget(row2, 1, 0);
+    multLayout->addWidget(mult2, 1, 1);
+    multLayout->addWidget(row3, 2, 0);
+    multLayout->addWidget(mult3, 2, 1);
+
+    QWidget *multWidget = new QWidget(this);
+    multWidget->setLayout(multLayout);
+
+    inputWidgetType->addWidget(multWidget);
+    inputWidgetType->setCurrentIndex(0);
+
+    return inputWidgetType;
+}
+
+QWidget *Window::createPushButtons() {
+    // buttons
+    QPushButton *updatePush = new QPushButton(tr("Update Puzzle"), this);
+
+    QPushButton *startPush = new QPushButton(tr("Start Search"), this);
+
+    // connections
+    connect(updatePush, SIGNAL(clicked(bool)),
+            this, SLOT(updatePuzzle()));
+
+    connect(startPush, SIGNAL(clicked(bool)),
+            this, SLOT(startSearch()));
+
+    // layout
+    QHBoxLayout *layout = new QHBoxLayout(this);
+    layout->addWidget(updatePush);
+    layout->addWidget(startPush);
+
+    QWidget *w = new QWidget(this);
+    w->setLayout(layout);
+    return w;
+}
+
+QWidget *Window::createInputPuzzleText() {
+    QLineEdit *line = new QLineEdit(this);
+    return line;
 }
 
 QWidget *Window::createSearchInput() {
@@ -216,8 +315,6 @@ QWidget *Window::createSearchInput() {
     box->setLayout(layout);
     return box;
 }
-
-
 
 // right column
 
@@ -260,19 +357,61 @@ QWidget *Window::createScrollBox() {
 
 void Window::updatePuzzle() {
     // initialize error message and new puzzle vector
+    vector<QString> errorMessageVec;
+    vector<int> newPuzzle;
+    bool isInputFine = true;
+
+    // determine validity based on input
+    switch(inputType) {
+        case(0): // single input
+            for (unsigned int i = 0; i < inputTextBoxes.at(0)->text().size(); i++) {
+                // push inputPuzzle character into new vector
+                newPuzzle.push_back(inputTextBoxes.at(0)->text().at(i).digitValue());
+            }
+
+            isInputFine = isInputValid(newPuzzle, errorMessageVec);
+            break;
+        case(1): // multiple inputs
+            for (unsigned int i = 1; i < inputTextBoxes.size(); i++) {
+                for (unsigned int j = 0; j < inputTextBoxes.at(i)->text().size(); j++) {
+                    newPuzzle.push_back(inputTextBoxes.at(i)->text().at(j).digitValue());
+                }
+            }
+
+            isInputFine = isInputValid(newPuzzle, errorMessageVec);
+            break;
+        default:
+            qDebug() << "INPUT TYPE INVALID";
+            break;
+    }
+
+    // if check went through
+    if (isInputFine) {
+        puzzleVec = newPuzzle;
+        UpdatePuzzleGraphics();
+    }
+    else {
+        QString finalError = "";
+        for (unsigned int i = 0; i < errorMessageVec.size()-1; i++) {
+            finalError += errorMessageVec.at(i) + ", ";
+        }
+        finalError += errorMessageVec.at(errorMessageVec.size()-1);
+
+        QMessageBox errorBox;
+        errorBox.setWindowTitle("Error Inputting Puzzle");
+        errorBox.setText(finalError);
+        errorBox.setIcon(QMessageBox::Critical);
+        errorBox.exec();
+    }
+}
+
+bool Window::isInputValid(vector<int> newPuzzle, vector<QString> &errorMessageVec) {
     bool isInputFine = true;
     bool isInvalidChar = false;     // used for error handling
     bool isDuplicateChar = false;   // used for error handling
-    vector<QString> errorMessageVec;
-    vector<int> newPuzzle;
-    for (unsigned int i = 0; i < inputPuzzleText->text().size(); i++) {
-        // push inputPuzzle character into new vector
-        newPuzzle.push_back(inputPuzzleText->text().at(i).digitValue());
-    }
 
-    // check if input is valid
-    //input of nothing
-    if (newPuzzle.size() != 9) {
+    if (newPuzzle.size() != puzzleSize) {
+        qDebug() << newPuzzle.size() << ", " << puzzleSize;
         errorMessageVec.push_back("Invalid input size");
         isInputFine = false;
     }
@@ -313,29 +452,33 @@ void Window::updatePuzzle() {
         isInputFine = false;
     }
 
-    // if check went through
-    if (isInputFine) {
-        puzzleVec = newPuzzle;
-        UpdatePuzzleGraphics();
-    }
-    else {
-        QString finalError = "";
-        for (unsigned int i = 0; i < errorMessageVec.size()-1; i++) {
-            finalError += errorMessageVec.at(i) + ", ";
-        }
-        finalError += errorMessageVec.at(errorMessageVec.size()-1);
-
-        QMessageBox errorBox;
-        errorBox.setWindowTitle("Error Inputting Puzzle");
-        errorBox.setText(finalError);
-        errorBox.setIcon(QMessageBox::Critical);
-        errorBox.exec();
-    }
+    return isInputFine;
 }
 
 void Window::updateSearchType(int id) {
     searchType = id;
 }
+
+void Window::updateInputType(int id) {
+    inputType = id; // new input styles
+
+    switch(id) {
+    case(0): // single input line
+        inputWidgetType->setCurrentIndex(0);
+        puzzleInputMainWidget->update();
+        break;
+    case(1): // multiple input lines
+        inputWidgetType->setCurrentIndex(1);
+        puzzleInputMainWidget->update();
+        break;
+    default:
+        qDebug() << "ERROR WHEN UPDATING INPUT TYPE";
+        break;
+    }
+
+
+}
+
 
 void Window::startSearch() {
     // set searching icon

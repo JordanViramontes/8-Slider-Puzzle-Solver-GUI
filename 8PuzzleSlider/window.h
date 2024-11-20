@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QScrollArea>
+#include <QStackedWidget>
 #include <vector>
 
 using std::vector;
@@ -30,15 +31,27 @@ private:
     QGridLayout *createGrid();
 
     // left column
-    QLabel *puzzleLabel;
-    QWidget *puzzleGraphicsWidget;
-    QLineEdit *inputPuzzleText;
+    QLabel *puzzleLabel; //label showing puzzleVec
+    QWidget *puzzleGraphicsWidget; //main widget for graphics
     vector<QLabel*> puzzleGraphicsLabels;
     int cellSize;
+    int inputType;
 
+    // input widget
+    QWidget *puzzleInputMainWidget;
+    QStackedWidget *inputWidgetType;
+    vector<QLineEdit*> inputTextBoxes;
+    QLayout *inputLinesLayout;
+
+    QWidget *createPuzzleInput();
+    QWidget *createInputRadioButtons();
+    QWidget *createInputLineTextLayout();
+    QWidget *createPushButtons();
+
+    // rest of the widgets
     QLabel *createPuzzleLabel();
     QWidget *createPuzzleGraphics();
-    QWidget *createPuzzleInput();
+    QWidget *createInputPuzzleText();
     QWidget *createSearchInput();
     void UpdatePuzzleGraphics();
     QString getVecString();
@@ -52,10 +65,14 @@ private:
     QWidget *createOutputBox();
     QWidget *createScrollBox();
 
+    // additional helper functions
+    bool isInputValid(vector<int> newPuzzle, vector<QString> &errorMessageVec);
+
 
 private slots:
     void updatePuzzle();
     void updateSearchType(int id);
+    void updateInputType(int id);
     void startSearch();
 
 signals:
